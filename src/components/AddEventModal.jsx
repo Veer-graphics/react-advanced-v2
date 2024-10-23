@@ -1,3 +1,4 @@
+// AddEventModal.jsx
 import {
     Button,
     FormControl,
@@ -14,77 +15,126 @@ import {
     Textarea,
     useToast,
     Box,
-    Image
+    Image,
+    Select
 } from "@chakra-ui/react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export const AddEventModal = ({ isOpen, onClose, onAddEvent, categories }) => {
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
-    const [selectedCategories, setSelectedCategories] = useState([]);
-    const [eventImage, setEventImage] = useState(null);
-    const [eventImagePreview, setEventImagePreview] = useState(null);
-    const [startTime, setStartTime] = useState("");
-    const [endTime, setEndTime] = useState("");
-    const [authorName, setAuthorName] = useState("");
+export const AddEventModal = ({ isOpen, onClose, onAddEvent, categories, users }) => {
+    const [addFormData, setAddFormData] = useState({
+        title: "",
+        description: "",
+        selectedCategories: [],
+        image: null,
+        eventImagePreview: null,
+        startTime: "",
+        endTime: "",
+        selectedUserId: null, // Initialize as null
+    });
 
     const toast = useToast();
+    const navigate = useNavigate();
 
     const handleFilterClick = (categoryId) => {
-        const updatedCategories = selectedCategories.includes(categoryId)
-            ? selectedCategories.filter((id) => id !== categoryId)
-            : [...selectedCategories, categoryId];
-        setSelectedCategories(updatedCategories);
+        setAddFormData((prevData) => ({
+            ...prevData,
+            selectedCategories: prevData.selectedCategories.includes(categoryId)
+                ? prevData.selectedCategories.filter((id) => id !== categoryId)
+                : [...prevData.selectedCategories, categoryId]
+        }));
     };
 
-    const addEvent = () => {
+    const addEvent = async () => {
+        const { title, description, eventImagePreview, selectedUserId, startTime, endTime, selectedCategories } = addFormData;
 
-        if (!title || !description || !eventImage) {
-            alert('Please fill all fields and upload an image.');
+        if (!title || !description || !eventImagePreview || selectedUserId === null || !startTime || !endTime) {
+            toast({
+                title: "Error",
+                description: "Please fill all fields and upload an image.",
+                status: "error",
+                duration: null,
+                isClosable: true,
+            });
             return;
         }
 
         const newEvent = {
-            id: Date.now(), // Example unique ID
+            id: Date.now(), // Unique ID can be improved
             title,
             description,
             image: eventImagePreview,
-            authorName,
+            createdBy: selectedUserId,
             startTime,
             endTime,
-            categoryIds: selectedCategories// Use preview URL to display the image
-            // Include other event properties like startTime, endTime, categories, etc.
+            categoryIds: selectedCategories,
         };
 
-        onAddEvent(newEvent);
+        try {
+            await onAddEvent(newEvent); // Ensure this is an async function
+            toast({
+                title: 'Event added.',
+                description: `${title} has been added successfully!`,
+                status: 'success',
+                duration: null,
+                isClosable: true,
+            });
 
-        toast({
-            title: 'Event added.',
-            description: `${title} has been added successfully!`,
-            status: 'success',
-            duration: 5000,
-            isClosable: true,
-        });
+            // Reset fields and close modal
+            setAddFormData({
+                title: "",
+                description: "",
+                selectedCategories: [],
+                image: null,
+                eventImagePreview: null,
+                startTime: "",
+                endTime: "",
+                selectedUserId: null, // Reset to null
+            });
 
-        // Reset fields and close modal
-        setTitle('');
-        setDescription('');
-        setEventImage(null);
-        setEventImagePreview(null);
-        setAuthorName("");
-        onClose();
-    }
+            navigate(`/event/${newEvent.id}`);
+            onClose();
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: "Failed to add event. Please try again.",
+                status: "error",
+                duration: null,
+                isClosable: true,
+            });
+        }
+    };
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setEventImage(file);
-            setEventImagePreview(URL.createObjectURL(file))
+            setAddFormData((prevData) => ({
+                ...prevData,
+                image: file,
+                eventImagePreview: URL.createObjectURL(file)
+            }));
         }
-    }
+    };
+
+    const { title, description, eventImagePreview, startTime, endTime, selectedCategories, selectedUserId } = addFormData;
+
+    // Find the selected user based on the selectedUserId
+    const selectedUser = users.find(user => user.id === selectedUserId) || {};
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose}>
+        <Modal isOpen={isOpen} onClose={() => {
+            setAddFormData({
+                title: "",
+                description: "",
+                selectedCategories: [],
+                image: null,
+                eventImagePreview: null,
+                startTime: "",
+                endTime: "",
+                selectedUserId: null, // Reset to null
+            });
+            onClose();
+        }}>
             <ModalOverlay />
             <ModalContent>
                 <ModalHeader>Add event</ModalHeader>
@@ -95,7 +145,7 @@ export const AddEventModal = ({ isOpen, onClose, onAddEvent, categories }) => {
                         <Input
                             placeholder="Your event name"
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => setAddFormData((prevData) => ({ ...prevData, title: e.target.value }))}
                         />
                     </FormControl>
                     <FormControl isRequired>
@@ -103,7 +153,7 @@ export const AddEventModal = ({ isOpen, onClose, onAddEvent, categories }) => {
                         <Textarea
                             placeholder="Your event description"
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => setAddFormData((prevData) => ({ ...prevData, description: e.target.value }))}
                         />
                     </FormControl>
                     <FormControl mb={4}>
@@ -128,28 +178,39 @@ export const AddEventModal = ({ isOpen, onClose, onAddEvent, categories }) => {
                         <Input
                             type="datetime-local"
                             value={startTime}
-                            onChange={(e) => setStartTime(e.target.value)}
+                            onChange={(e) => setAddFormData((prevData) => ({ ...prevData, startTime: e.target.value }))}
                         />
                     </FormControl>
-
                     <FormControl>
                         <FormLabel>Add your end time</FormLabel>
                         <Input
                             type="datetime-local"
                             value={endTime}
-                            onChange={(e) => setEndTime(e.target.value)}
+                            onChange={(e) => setAddFormData((prevData) => ({ ...prevData, endTime: e.target.value }))}
                         />
                     </FormControl>
-                    <FormControl>
-                        <FormLabel>Add your name</FormLabel>
-                        <Input
-                            placeholder="Your name"
-                            value={authorName}
-                            onChange={(e) => setAuthorName(e.target.value)}
-                        />
+                    <FormControl isRequired>
+                        <FormLabel>Select Author</FormLabel>
+                        <Select
+                            placeholder="Select author"
+                            value={selectedUserId ?? ""} // Ensure value is a string or empty string
+                            onChange={(e) => setAddFormData((prevData) => ({ ...prevData, selectedUserId: Number(e.target.value) }))}
+                        >
+                            {users.map((user) => (
+                                <option key={user.id} value={user.id}>{user.name}</option>
+                            ))}
+                        </Select>
                     </FormControl>
+                    {selectedUser.image && (
+                        <Box mt={4} display="flex" alignItems="center">
+                            <Image src={selectedUser.image} alt={`${selectedUser.name}'s image`} boxSize="50px" borderRadius="full" />
+                            <Box ml={2}>
+                                <strong>{selectedUser.name}</strong>
+                            </Box>
+                        </Box>
+                    )}
                     <FormControl id="image" mt={4} isRequired>
-                        <FormLabel>Upload Image</FormLabel>
+                        <FormLabel>Upload Event Image</FormLabel>
                         <Input type="file" accept="image/*" onChange={handleImageChange} />
                         {eventImagePreview && (
                             <Box mt={2}>
@@ -158,15 +219,16 @@ export const AddEventModal = ({ isOpen, onClose, onAddEvent, categories }) => {
                         )}
                     </FormControl>
                 </ModalBody>
-                <ModalFooter>
+                <ModalFooter w="100%">
                     <Button
+                        w="100%"
                         bgGradient="linear(60deg, #813ede, #23ebc0)"
                         _hover={{ transform: "scale(1.1)" }}
                         color={"white"}
                         onClick={addEvent}
-                        isDisabled={!title || !description || selectedCategories.length === 0} // Disable if fields are empty
+                        isDisabled={!title || !description || !eventImagePreview || selectedUserId === null || !startTime || !endTime}
                     >
-                        Add event
+                        Add Event
                     </Button>
                 </ModalFooter>
             </ModalContent>

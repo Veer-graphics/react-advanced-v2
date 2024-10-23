@@ -31,9 +31,9 @@ export const EventsPage = () => {
       } catch (error) {
         toast({
           title: 'Error fetching data.',
-          description: error.message,
+          description: `We encountered an issue while fetching data. Please check your internet connection or contact support if the problem persists. Error: ${error.message}`,
           status: 'error',
-          duration: 5000,
+          duration: null, // This makes the toast stay visible until manually dismissed
           isClosable: true,
         });
       }
@@ -75,26 +75,29 @@ export const EventsPage = () => {
   useEffect(() => {
     const filtered = filterEvents();
     setFilteredEvents(filtered);
-  }, [events, selectedCategories, searchQuery]);
+
+    if (filtered.length === 0 && searchQuery) {
+      toast({
+        title: 'No events found.',
+        description: 'No events match your search criteria.',
+        status: 'error',
+        duration: null, // Keeps the toast visible until manually dismissed
+        isClosable: true,
+      })
+    }
+  }, [events, selectedCategories, searchQuery, toast]);
 
   // Add new event
   const onAddEvent = async (newEvent) => {
     try {
       const addedEvent = await addEvent(newEvent);
       setEvents((prevEvents) => [...prevEvents, addedEvent]);
-      toast({
-        title: 'Event added.',
-        description: 'The new event has been successfully added.',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
     } catch (error) {
       toast({
         title: 'Error adding event.',
-        description: error.message,
+        description: `We encountered an issue while adding the event. Please try again. Error: ${error.message}`,
         status: 'error',
-        duration: 5000,
+        duration: null, // This makes the error toast stay until manually dismissed
         isClosable: true,
       });
     }
@@ -109,30 +112,31 @@ export const EventsPage = () => {
         minH={{ base: "30vh", lg: "50vh" }}
         paddingY={{ base: "1em", lg: "6.2em" }}
       >
-        <Container maxW={{ base: "90%", lg: "1300px" }}>
+        <Container maxW={{ base: "90%", lg: "1300px" }} paddingY={{ base: "3em", lg: "0em" }}>
           <Heading color={"blue.800"} mb={5}>
             Your Events
           </Heading>
-          <Flex gap={5}>
-            <Input
-              placeholder="Search your event by name"
-              bgColor={"white"}
-              boxShadow={"sm"}
-              color={"blue.900"}
-              focusBorderColor="blue.100"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              width={"30%"}
-            />
-            <Button
-              bgGradient="linear(60deg, #813ede, #23ebc0)"
-              _hover={{ transform: "scale(1.1)" }}
-              color={"white"}
-              onClick={() => setIsAddOpen(true)}
-            >
-              Add Event
-            </Button>
-          </Flex>
+          <Input
+            placeholder="Search your event by name"
+            bgColor={"white"}
+            boxShadow={"sm"}
+            color={"blue.900"}
+            focusBorderColor="blue.100"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            width={"30%"}
+            mb={4}
+            w="100%"
+          />
+          <Button
+            bgGradient="linear(60deg, #813ede, #23ebc0)"
+            _hover={{ transform: "scale(1.1)" }}
+            color={"white"}
+            onClick={() => setIsAddOpen(true)}
+            display="block"
+          >
+            Add Event
+          </Button>
 
           {/* Categories as filter buttons */}
           <Flex gap={3} mt={5}>
@@ -168,7 +172,7 @@ export const EventsPage = () => {
         borderWidth="1px"
         borderColor="gray.100"
       >
-        <SimpleGrid columns={{ base: 1, lg: 4 }} gap={5}>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3, xl: 4 }} gap={5}>
           {filteredEvents.map((event) => (
             <EventItem key={event.id} event={event} categories={categories} />
           ))}
@@ -181,6 +185,7 @@ export const EventsPage = () => {
         onClose={() => setIsAddOpen(false)}
         onAddEvent={onAddEvent}
         categories={categories}
+        users={users}
       />
     </Box>
   );

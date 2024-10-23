@@ -22,7 +22,7 @@ export const EventItem = ({ event, categories }) => {
     return (
         <Link to={`/event/${event.id}`} key={event.id}>
             <Box padding="1em" borderRadius="md" borderWidth="1px" borderColor="purple.100" bgColor="white" boxShadow="lg" _hover={{ transform: "scale(1.1)" }} transition="0.3s ease all">
-                <Box w="100%" h={{ base: "1.5em", lg: "10em" }} overflow="hidden" borderRadius="md" mb={3}>
+                <Box w="100%" h={{ base: "8em", lg: "10em" }} overflow="hidden" borderRadius="md" mb={3}>
                     <Image src={event.image} w="100%" h="100%" objectFit="cover" />
                 </Box>
                 <Box>

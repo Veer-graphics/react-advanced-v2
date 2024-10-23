@@ -1,33 +1,69 @@
-import { Modal, ModalCloseButton, ModalContent, ModalHeader, ModalOverlay, ModalBody, FormControl, FormLabel, Input, Textarea, HStack, Button, ModalFooter } from "@chakra-ui/react"
+import {
+    Modal,
+    ModalCloseButton,
+    ModalContent,
+    ModalHeader,
+    ModalOverlay,
+    ModalBody,
+    FormControl,
+    FormLabel,
+    Input,
+    Textarea,
+    HStack,
+    Button,
+    ModalFooter,
+    useToast,
+    Box,
+    Image
+} from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-import { useToast } from "@chakra-ui/react";
 
 export const EditEventModal = ({ isOpen, onClose, event, categories, onEditEvent }) => {
+    const [editFormData, setEditFormData] = useState({
+        title: '',
+        description: '',
+        selectedCategories: [],
+        eventImagePreview: '',
+        startTime: '',
+        endTime: '',
+        image: null,
+    });
 
-    const [title, setTitle] = useState(event?.title || '');
-    const [description, setDescription] = useState(event?.description || '');
-    const [selectedCategories, setSelectedCategories] = useState(event?.categoryIds || []); // Store multiple categories
     const toast = useToast();
-
 
     useEffect(() => {
         if (event) {
-            setTitle(event.title);
-            setDescription(event.description);
-            setSelectedCategories(event.categoryIds || []); // Set initial selected categories
+            setEditFormData({
+                title: event.title,
+                description: event.description,
+                selectedCategories: event.categoryIds || [],
+                eventImagePreview: event.image,
+                startTime: event.startTime,
+                endTime: event.endTime,
+                image: null, // Reset image state to avoid confusion
+            });
         }
     }, [event]);
 
+    const handleEditEvent = async () => {
+        const { title, description, selectedCategories, eventImagePreview, startTime, endTime } = editFormData;
 
-    const handleEditEvent = () => {
-        if (title && description && selectedCategories.length > 0) {
-            onEditEvent({ ...event, title, description, categoryIds: selectedCategories });
+        if (title && description && selectedCategories.length > 0 && startTime && endTime) {
+            await onEditEvent({
+                ...event,
+                title,
+                description,
+                categoryIds: selectedCategories,
+                image: eventImagePreview, // Use updated image path or keep it as is if not changed
+                startTime,
+                endTime,
+            });
             onClose();
             toast({
                 title: 'Event updated',
                 description: `The event "${title}" has been successfully updated.`,
                 status: 'success',
-                duration: 3000,
+                duration: null,
                 isClosable: true,
             });
         } else {
@@ -35,20 +71,33 @@ export const EditEventModal = ({ isOpen, onClose, event, categories, onEditEvent
                 title: 'Missing fields',
                 description: 'Please fill in all the required fields.',
                 status: 'error',
-                duration: 3000,
+                duration: null,
                 isClosable: true,
             });
         }
     };
 
-
     const handleFilterClick = (categoryId) => {
-        setSelectedCategories((prevSelected) =>
-            prevSelected.includes(categoryId)
-                ? prevSelected.filter((id) => id !== categoryId) // Remove if already selected
-                : [...prevSelected, categoryId] // Add if not selected
-        );
+        setEditFormData((prevData) => ({
+            ...prevData,
+            selectedCategories: prevData.selectedCategories.includes(categoryId)
+                ? prevData.selectedCategories.filter((id) => id !== categoryId) // Remove if already selected
+                : [...prevData.selectedCategories, categoryId], // Add if not selected
+        }));
     };
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setEditFormData((prevData) => ({
+                ...prevData,
+                image: file,
+                eventImagePreview: URL.createObjectURL(file),
+            }));
+        }
+    };
+
+    const { title, description, eventImagePreview, startTime, endTime, selectedCategories } = editFormData;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
@@ -59,16 +108,34 @@ export const EditEventModal = ({ isOpen, onClose, event, categories, onEditEvent
                 <ModalBody>
                     <FormControl isRequired>
                         <FormLabel>Title</FormLabel>
-                        <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+                        <Input
+                            value={title}
+                            onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                        />
                     </FormControl>
                     <FormControl mt={4} isRequired>
                         <FormLabel>Description</FormLabel>
                         <Textarea
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                         />
                     </FormControl>
-
+                    <FormControl mt={4} isRequired>
+                        <FormLabel>Start Time</FormLabel>
+                        <Input
+                            type="datetime-local"
+                            value={startTime}
+                            onChange={(e) => setEditFormData({ ...editFormData, startTime: e.target.value })}
+                        />
+                    </FormControl>
+                    <FormControl mt={4} isRequired>
+                        <FormLabel>End Time</FormLabel>
+                        <Input
+                            type="datetime-local"
+                            value={endTime}
+                            onChange={(e) => setEditFormData({ ...editFormData, endTime: e.target.value })}
+                        />
+                    </FormControl>
 
                     {/* Filter Buttons for Selecting Multiple Categories */}
                     <FormControl mt={4} isRequired>
@@ -88,18 +155,29 @@ export const EditEventModal = ({ isOpen, onClose, event, categories, onEditEvent
                             ))}
                         </HStack>
                     </FormControl>
+                    <FormControl id="image" mt={4}>
+                        <FormLabel>Upload Event Image</FormLabel>
+                        <Input type="file" accept="image/*" onChange={handleImageChange} />
+                        {eventImagePreview && (
+                            <Box mt={2}>
+                                <Image src={eventImagePreview} alt="Selected image" boxSize="150px" objectFit="cover" />
+                            </Box>
+                        )}
+                    </FormControl>
                 </ModalBody>
                 <ModalFooter>
-                    <Button bgGradient="linear(60deg, #813ede, #23ebc0)"
+                    <Button
+                        w="100%"
+                        bgGradient="linear(60deg, #813ede, #23ebc0)"
                         _hover={{ transform: "scale(1.1)" }}
                         color={"white"}
                         onClick={handleEditEvent}
+                        isDisabled={!title || !description || selectedCategories.length === 0 || !startTime || !endTime}
                     >
                         Save Changes
                     </Button>
                 </ModalFooter>
-
             </ModalContent>
         </Modal>
-    )
+    );
 }

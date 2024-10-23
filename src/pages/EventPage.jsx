@@ -1,9 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { Heading, Box, useToast, Container, SimpleGrid, Image, Spinner, Text, Flex, Tag, ButtonGroup, Button } from '@chakra-ui/react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  Heading,
+  Box,
+  useToast,
+  Container,
+  SimpleGrid,
+  Image,
+  Spinner,
+  Text,
+  Flex,
+  Tag,
+  Button
+} from '@chakra-ui/react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { deleteEvent, editEvent, getCategories, getEventById, getUsers } from '../api';
 import { EditEventModal } from '../components/EditEventModal';
 import { DeleteEventModal } from '../components/DeleteEventModal';
+
 
 export const EventPage = () => {
   const { eventId } = useParams();
@@ -13,21 +26,22 @@ export const EventPage = () => {
   const [loading, setLoading] = useState(true);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-
   const toast = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const getEvent = async () => {
+    const fetchData = async () => {
       try {
-        const eventData = await getEventById(eventId);
+        const [eventData, userData, categoryData] = await Promise.all([
+          getEventById(eventId),
+          getUsers(),
+          getCategories()
+        ]);
         setEvent(eventData);
-        const userData = await getUsers();
         setUsers(userData);
-        const categoryData = await getCategories();
         setCategories(categoryData);
       } catch (error) {
-        console.error("Error fetching event:", error);
+        console.error("Error fetching event data:", error);
         toast({
           title: 'Error',
           description: 'Could not load event data',
@@ -40,7 +54,7 @@ export const EventPage = () => {
       }
     };
 
-    getEvent();
+    fetchData();
   }, [eventId, toast]);
 
   if (loading) {
@@ -59,30 +73,21 @@ export const EventPage = () => {
     );
   }
 
-
   const author = users.find((user) => user.id === event.createdBy) || {};
-  const eventCategories = categories.filter(
-    (category) => Array.isArray(event.categoryIds) && event.categoryIds.includes(category.id)
-  );
+  const eventCategories = categories.filter(category => event.categoryIds?.includes(category.id));
+  console.log("Author Image:", author);
 
   const handleEdit = async (updatedEvent) => {
     try {
       const res = await editEvent(updatedEvent.id, updatedEvent);
       setEvent(res);
-      toast({
-        title: "Event updated",
-        description: "Event updated",
-        status: "success",
-        isClosable: true,
-        duration: 5000
-      });
     } catch (error) {
       toast({
-        title: "Something went wrong",
+        title: "Update Failed",
         description: error.message,
         status: "error",
         isClosable: true,
-        duration: 5000
+        duration: null
       });
     } finally {
       setIsEditOpen(false);
@@ -99,18 +104,17 @@ export const EventPage = () => {
         description: error.message,
         status: "error",
         isClosable: true,
-        duration: 5000
+        duration: null
       });
     }
   };
 
   return (
-    <Box paddingY={{ base: "1em", lg: "6.2em" }} pos="relative">
-
+    <Box paddingY={{ base: "4em", lg: "6.2em" }} pos="relative">
       <Container maxW={{ base: "90%", lg: "1300px" }}>
-        <Link to="/">Go back</Link>
-        <SimpleGrid columns={{ base: 1, lg: 2 }} mt="1em" gap={10}>
-          <Box overflow="hidden" borderRadius="md">
+        <Button onClick={() => navigate("/")}>Go back</Button>
+        <SimpleGrid columns={{ base: 1, lg: 2 }} mt="1em" gap={{ base: 5, lg: 10 }}>
+          <Box overflow="hidden" borderRadius="md" height={{ base: "10em", lg: "30em" }}>
             <Image src={event.image} w="100%" h="100%" objectFit="cover" />
           </Box>
           <Box>
@@ -137,10 +141,23 @@ export const EventPage = () => {
                 </Box>
               </Flex>
             </Box>
-            <ButtonGroup gap={2}>
-              <Button onClick={() => setIsEditOpen(true)}>Edit</Button>
-              <Button onClick={() => setIsDeleteOpen(true)}>Delete</Button>
-            </ButtonGroup>
+            <Flex gap={{ base: 5, lg: 3 }} direction={{ base: "column", lg: "row" }}>
+              <Button
+                onClick={() => setIsEditOpen(true)}
+                bgGradient="linear(60deg, #813ede, #23ebc0)"
+                _hover={{ transform: "scale(1.1)" }}
+                color="#fff"
+              >Edit
+              </Button>
+              <Button
+                onClick={() => setIsDeleteOpen(true)}
+                backgroundColor="transparent"
+                border="1px solid #ff7878"
+                color="#ff7878"
+                _hover={{ "bgColor": "#ff7878", "color": "#fff" }}
+              >Delete
+              </Button>
+            </Flex>
           </Box>
         </SimpleGrid>
       </Container>
