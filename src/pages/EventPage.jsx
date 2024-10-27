@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   Heading,
   Box,
-  useToast,
   Container,
   SimpleGrid,
   Image,
@@ -12,21 +11,23 @@ import {
   Tag,
   Button
 } from '@chakra-ui/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { deleteEvent, editEvent, getCategories, getEventById, getUsers } from '../api';
 import { EditEventModal } from '../components/EditEventModal';
 import { DeleteEventModal } from '../components/DeleteEventModal';
+import { StatusMessage } from '../components/StatusMessage';
 
 
 export const EventPage = () => {
+  const { state } = useLocation();
   const { eventId } = useParams();
   const [event, setEvent] = useState(null);
+  const [status, setStatus] = useState(state || { message: "", type: "" });
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const toast = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,20 +43,15 @@ export const EventPage = () => {
         setCategories(categoryData);
       } catch (error) {
         console.error("Error fetching event data:", error);
-        toast({
-          title: 'Error',
-          description: 'Could not load event data',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+        // setStatus({ message: "Could not load event data", type: "error" });
+        setStatus({ state: { message: "Could not load event data", type: "error" } })
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [eventId, toast]);
+  }, [eventId]);
 
   if (loading) {
     return (
@@ -80,15 +76,10 @@ export const EventPage = () => {
   const handleEdit = async (updatedEvent) => {
     try {
       const res = await editEvent(updatedEvent.id, updatedEvent);
+      setStatus({ message: `Event successfully updated`, type: "success" })
       setEvent(res);
     } catch (error) {
-      toast({
-        title: "Update Failed",
-        description: error.message,
-        status: "error",
-        isClosable: true,
-        duration: null
-      });
+      navigate("/", { state: { message: `Update failed: ${error.message}`, type: "error" } })
     } finally {
       setIsEditOpen(false);
     }
@@ -97,21 +88,22 @@ export const EventPage = () => {
   const handleDelete = async () => {
     try {
       await deleteEvent(event.id);
-      navigate("/");
+      navigate("/", { state: { message: `Event deleted successfully!`, type: "success" } });
     } catch (error) {
-      toast({
-        title: "Error deleting event",
-        description: error.message,
-        status: "error",
-        isClosable: true,
-        duration: null
-      });
+      navigate("/", { state: { message: `Error deleting event: ${error.message}`, type: "error" } });
     }
   };
 
   return (
     <Box paddingY={{ base: "4em", lg: "6.2em" }} pos="relative">
       <Container maxW={{ base: "90%", lg: "1300px" }}>
+        {status.message && (
+          <StatusMessage
+            message={status.message}
+            type={status.type}
+            onClose={() => setStatus({ message: "", type: "" })}
+          />
+        )}
         <Button onClick={() => navigate("/")}>Go back</Button>
         <SimpleGrid columns={{ base: 1, lg: 2 }} mt="1em" gap={{ base: 5, lg: 10 }}>
           <Box overflow="hidden" borderRadius="md" height={{ base: "10em", lg: "30em" }}>

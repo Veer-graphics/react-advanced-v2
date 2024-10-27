@@ -12,9 +12,9 @@ import {
     HStack,
     Button,
     ModalFooter,
-    useToast,
     Box,
-    Image
+    Image,
+    Text
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 
@@ -28,8 +28,7 @@ export const EditEventModal = ({ isOpen, onClose, event, categories, onEditEvent
         endTime: '',
         image: null,
     });
-
-    const toast = useToast();
+    // const [message, setMessage] = useState(null);
 
     useEffect(() => {
         if (event) {
@@ -59,21 +58,9 @@ export const EditEventModal = ({ isOpen, onClose, event, categories, onEditEvent
                 endTime,
             });
             onClose();
-            toast({
-                title: 'Event updated',
-                description: `The event "${title}" has been successfully updated.`,
-                status: 'success',
-                duration: null,
-                isClosable: true,
-            });
+            // setMessage({ text: `The event "${title}" has been successfully updated.`, type: "success" });
         } else {
-            toast({
-                title: 'Missing fields',
-                description: 'Please fill in all the required fields.',
-                status: 'error',
-                duration: null,
-                isClosable: true,
-            });
+            // setMessage({ text: "Please fill in all the required fields.", type: "error" })
         }
     };
 

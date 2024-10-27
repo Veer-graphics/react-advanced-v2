@@ -13,7 +13,6 @@ import {
     ModalHeader,
     ModalOverlay,
     Textarea,
-    useToast,
     Box,
     Image,
     Select
@@ -33,7 +32,7 @@ export const AddEventModal = ({ isOpen, onClose, onAddEvent, categories, users }
         selectedUserId: null, // Initialize as null
     });
 
-    const toast = useToast();
+
     const navigate = useNavigate();
 
     const handleFilterClick = (categoryId) => {
@@ -49,13 +48,8 @@ export const AddEventModal = ({ isOpen, onClose, onAddEvent, categories, users }
         const { title, description, eventImagePreview, selectedUserId, startTime, endTime, selectedCategories } = addFormData;
 
         if (!title || !description || !eventImagePreview || selectedUserId === null || !startTime || !endTime) {
-            toast({
-                title: "Error",
-                description: "Please fill all fields and upload an image.",
-                status: "error",
-                duration: null,
-                isClosable: true,
-            });
+            // setMessage({ text: "Please fill all fields and upload an image", type: "error" });
+            // return;
             return;
         }
 
@@ -72,13 +66,7 @@ export const AddEventModal = ({ isOpen, onClose, onAddEvent, categories, users }
 
         try {
             await onAddEvent(newEvent); // Ensure this is an async function
-            toast({
-                title: 'Event added.',
-                description: `${title} has been added successfully!`,
-                status: 'success',
-                duration: null,
-                isClosable: true,
-            });
+            // setMessage({ text: `${title} has been added successfully!`, type: "success" });
 
             // Reset fields and close modal
             setAddFormData({
@@ -92,16 +80,10 @@ export const AddEventModal = ({ isOpen, onClose, onAddEvent, categories, users }
                 selectedUserId: null, // Reset to null
             });
 
-            navigate(`/event/${newEvent.id}`);
+            navigate(`/event/${newEvent.id}`, { state: { message: `${title} has been added successfully!`, type: "success" } });
             onClose();
         } catch (error) {
-            toast({
-                title: "Error",
-                description: "Failed to add event. Please try again.",
-                status: "error",
-                duration: null,
-                isClosable: true,
-            });
+            setMessage({ text: "Failed to add event. Please try again.", type: "error" });
         }
     };
 

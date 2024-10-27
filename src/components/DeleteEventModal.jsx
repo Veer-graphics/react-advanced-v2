@@ -1,20 +1,14 @@
-import { useToast, Modal, ModalOverlay, ModalContent, ModalBody, ModalFooter, Text, Button, Flex } from "@chakra-ui/react"
+import { Modal, ModalOverlay, ModalContent, ModalBody, ModalFooter, Text, Button, Flex } from "@chakra-ui/react"
+import { useState } from "react";
 
 export const DeleteEventModal = ({ isOpen, onClose, event, onDeleteEvent }) => {
-    const toast = useToast();
+    // const [message, setMessage] = useState(null);
 
     const handleDeleteEvent = () => {
         if (event) {
             onDeleteEvent(event.id);
             onClose();
-            toast({
-                title: 'Event deleted',
-                description: `The event "${event.title}" has been successfully deleted.`,
-                status: 'success',
-                duration: null,
-                isClosable: true,
-            });
-
+            // setMessage({ text: `The event "${event.title}" has been successfully deleted.`, type: "success" });
         }
     }
 
